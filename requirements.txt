@@ -1,3 +1,6 @@
 streamlit
 numpy  # Ejemplo de otra librería que podrías usar
 pandas
+yfinance
+matplotlib
+plotly
