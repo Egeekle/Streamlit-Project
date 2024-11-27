@@ -381,13 +381,14 @@ def analyze_with_monte_carlo(ticker, years=5, simulations=1000):
     # Identificar la mejor simulación
     final_prices = simulation_df.iloc[-1]
     best_simulation_idx = final_prices.idxmax()  # Índice de la mejor simulación
-    best_simulation = simulation_df[best_simulation_idx]  # Datos de la mejor simulación
     
-    best_simulation.to_csv(f"{ticker}_montecarlo_simulations.csv")
+    best_simulation = simulation_df[best_simulation_idx]  # Datos de la mejor simulación
     # Guardar los resultados si se desea
     output_folder = "data"
     output_file = f"{ticker}_montecarlo_simulations.csv"
     output_path = os.path.join(output_folder, output_file)
+    best_simulation.to_csv(output_path,index=True)
+   
     # Visualizar simulaciones con Plotly
     fig = go.Figure()
     for i in range(10):  # Mostrar 10 simulaciones
