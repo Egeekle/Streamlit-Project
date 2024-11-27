@@ -1,10 +1,10 @@
 # app.py
 import streamlit as st
 
-st.title("Mi Dashboard en Streamlit")
-st.write("¡Hola, este es mi primer dashboard en Streamlit!")
+st.title("Analisis Tecnico de Acciones")
+st.write("Este es un ejemplo de una aplicación web para análisis técnico de acciones.")
 
-
+from scipy.optimize import minimize
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -65,14 +65,14 @@ def analyze_stock(ticker, start_date, end_date):
     st.plotly_chart(fig)  # Display the Plotly chart
 
     # 4. Risk/Return analysis (placeholder)
-    st.write("Risk/Return analysis is under construction.")
+    
 
 assets = ["NU", "ORCL", "NEM",'AAPL']
 
 # Crear lista desplegable en la barra lateral
 ticker = st.sidebar.selectbox("Selecciona un activo:", assets)
-start_date = st.sidebar.date_input("Start Date:", value=datetime.date(2022, 1, 1))
-end_date = st.sidebar.date_input("End Date:", value=datetime.date(2023, 1, 1))
+start_date = st.sidebar.date_input("Start Date:", value=datetime.date(2020, 1, 1))
+end_date = st.sidebar.date_input("End Date:", value=datetime.date(2024, 1, 1))
 
 
     
@@ -331,12 +331,6 @@ def analyze_returns(data, ticker):
     st.plotly_chart(fig)
 
 
-
-
-
-
-
-
 if st.sidebar.button("Analyze"):  # Button to trigger analysis
     analyze_stock(ticker, start_date, end_date)
 
@@ -359,7 +353,7 @@ def monte_carlo_simulation(initial_price, mu, sigma, days, simulations):
 # Función para analizar con Monte Carlo
 def analyze_with_monte_carlo(ticker, years=5, simulations=1000):
     # Descargar datos históricos del activo
-    data = yf.download(ticker, start="2019-11-25", end="2024-11-25")['Close']
+    data = yf.download(ticker, start=start_date, end=end_date)['Close']
     
     if data.empty:
         st.error(f"No se encontraron datos para {ticker}.")
@@ -439,244 +433,170 @@ monte_carlo_simulations = st.sidebar.slider("Número de Simulaciones:", 100, 500
 if st.sidebar.button("Ejecutar Monte Carlo"):
     analyze_with_monte_carlo(monte_carlo_ticker, monte_carlo_years, monte_carlo_simulations)
     
-def load_simulation_data(tickers):
-    """Carga las simulaciones y calcula rendimientos esperados y volatilidades."""
-    returns_data = {}
-    for ticker in tickers:
-        try:
-            # Leer datos del archivo
-            simulation_data = pd.read_csv(f"{ticker}_montecarlo_simulations.csv", index_col=0)
-            simulation_data.index = pd.to_datetime(simulation_data.index)
-            
-            # Calcular rendimientos diarios
-            returns = simulation_data.pct_change().dropna()
-            returns_data[ticker] = {
-                'mean': returns.mean(),
-                'std': returns.std(),
-                'returns': returns
-            }
-        except FileNotFoundError:
-            st.warning(f"Archivo de simulación para {ticker} no encontrado.")
-        except Exception as e:
-            st.error(f"Error al procesar {ticker}: {e}")
-    return returns_data
-
-def optimize_portfolio(returns_data):
-    """Optimiza la cartera para encontrar la frontera eficiente."""
-    # Extraer activos
-    tickers = list(returns_data.keys())
-    if not tickers:
-        raise ValueError("No hay datos de retornos disponibles para optimizar la cartera.")
-    
-    # Matriz de rendimientos y covarianza
-    returns_matrix = np.vstack([returns_data[ticker]['returns'].values.flatten() for ticker in tickers])
-    cov_matrix = np.cov(returns_matrix)
-    mean_returns = np.array([returns_data[ticker]['returns'].mean() for ticker in tickers])
-    variances = np.diag(cov_matrix)
-    cov_with_variances = pd.DataFrame(cov_matrix, index=tickers, columns=tickers)
-    cov_with_variances['Variance'] = variances  # Añadir la columna de varianzas
-    # Función objetivo: minimizar riesgo para un retorno esperado
-    def portfolio_volatility(weights):
-        portfolio_variance = np.dot(weights.T, np.dot(cov_matrix, weights))
-        return np.sqrt(portfolio_variance)
-
-    # Definir pesos iniciales (uniformes)
-    initial_weights = np.ones(len(tickers)) / len(tickers)
-    bounds = tuple((0, 1) for _ in range(len(tickers)))  # Los pesos deben estar entre 0 y 1
-    constraints = (
-        {'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}  # La suma de los pesos debe ser 1
-    )
-
-    # Generar la frontera eficiente
-    efficient_portfolios = []
-    for target_return in np.linspace(mean_returns.min(), mean_returns.max(), 50):
-        constraints = (
-            {'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1},
-            {'type': 'eq', 'fun': lambda weights: np.dot(weights, mean_returns) - target_return}
-        )
-        try:
-            result = minimize(portfolio_volatility, initial_weights, 
-                              method='SLSQP', bounds=bounds, constraints=constraints)
-        except Exception as e:
-            print(f"Error en la optimización para retorno objetivo {target_return}: {e}")
-            continue
-        
-        if not result.success:
-            print(f"Optimización fallida para retorno objetivo {target_return}: {result.message}")
-            continue
-        
-        efficient_portfolios.append({
-            'Return': target_return,
-            'Volatility': result.fun,
-            'Weights': result.x
-        })
-    
-    if not efficient_portfolios:
-        raise ValueError("No se pudo generar una frontera eficiente.")
-    
-    return pd.DataFrame(efficient_portfolios), cov_with_variances
-
-
-
-def plot_efficient_frontier(portfolio_df):
-    """Visualiza la frontera eficiente."""
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=portfolio_df['Volatility'],
-        y=portfolio_df['Return'],
-        mode='lines+markers',
-        name='Frontera Eficiente'
-    ))
-    fig.update_layout(
-        title="Frontera Eficiente de la Cartera",
-        xaxis_title="Volatilidad (Riesgo)",
-        yaxis_title="Retorno Esperado",
-        template="plotly_white"
-    )
-    st.plotly_chart(fig)
-    
-tickers = st.sidebar.text_area("Ingrese Tickers de activos simulados:", value="AAPL, MSFT, TSLA").split(",")
-if st.sidebar.button("Optimizar Cartera"):
-    returns_data = load_simulation_data(tickers)
-    if returns_data:
-        portfolio_df = optimize_portfolio(returns_data)
-        plot_efficient_frontier(portfolio_df)
-        st.write("Pesos Óptimos:", portfolio_df.iloc[-1]['Weights'])
-   
-
-import yfinance as yf
+import streamlit as st
 import numpy as np
 import pandas as pd
-import streamlit as st
-import plotly.graph_objects as go
+import yfinance as yf
 from scipy.optimize import minimize
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
-# Función para realizar la simulación Monte Carlo
-def monte_carlo_simulation(initial_price, mu, sigma, days, simulations):
-    dt = 1
-    price_matrix = np.zeros((days, simulations))
-    price_matrix[0] = initial_price
-    for t in range(1, days):
-        random_shocks = np.random.normal(mu * dt, sigma * np.sqrt(dt), simulations)
-        price_matrix[t] = price_matrix[t - 1] * np.exp(random_shocks)
-    return price_matrix
 
-# Función para analizar con Monte Carlo
-def analyze_with_monte_carlo(ticker, years=5, simulations=1000):
-    # Descargar datos históricos del activo
-    data = yf.download(ticker, start="2019-11-25", end="2024-11-25")['Close']
-    
-    if data.empty:
-        st.error(f"No se encontraron datos para {ticker}.")
-        return None, None
-    
-    # Calcular rendimientos diarios
-    returns = data.pct_change().dropna()
-    
-    # Parámetros estadísticos
-    last_price = float(data.iloc[-1])  # Convertir a escalar
-    mu = returns.mean()
-    sigma = returns.std()
-    days = years * 252  # Aproximación a días hábiles
+# 1. Función para cargar datos desde Yahoo Finance
+def get_stock_data(tickers, start_date, end_date):
+    """Descarga datos de precios ajustados y calcula rendimientos diarios."""
+    try:
+        data = yf.download(tickers, start=start_date, end=end_date)['Close']
+        returns = data.pct_change().dropna()  # Calcular rendimientos diarios
+        return returns
+    except Exception as e:
+        st.error(f"Error al descargar datos de Yahoo Finance: {e}")
+        return None
 
-    # Simulación Monte Carlo
-    simulated_prices = monte_carlo_simulation(last_price, mu, sigma, days, simulations)
-    
-    # Generar fechas de simulación
-    simulation_dates = pd.date_range(data.index[-1] + pd.Timedelta(days=1), periods=days, freq='B')
-    
-    # Convertir simulaciones a DataFrame
-    simulation_df = pd.DataFrame(simulated_prices, index=simulation_dates)
-    simulation_df.columns = [f"Simulacion{i + 1}" for i in range(simulations)]
-    
-    # Identificar la mejor simulación
-    final_prices = simulation_df.iloc[-1]
-    best_simulation_idx = final_prices.idxmax()  # Índice de la mejor simulación
-    best_simulation = simulation_df[best_simulation_idx]  # Datos de la mejor simulación
-    
-    # Combinar datos históricos con la mejor simulación
-    combined_data = pd.concat([data, best_simulation])
-    combined_returns = combined_data.pct_change().dropna()
 
-    return combined_returns, combined_data
-
-# Función para optimización de cartera eficiente
-def optimize_portfolio(returns):
-    num_assets = returns.shape[1]
+# 2. Función para optimizar la cartera
+def optimize_portfolio(returns, risk_free_rate=0.02, num_portfolios=10000):
+    """Genera múltiples carteras y encuentra la frontera eficiente."""
     mean_returns = returns.mean()
     cov_matrix = returns.cov()
-    risk_free_rate = 0.02
+    num_assets = len(mean_returns)
+    results = np.zeros((3 + num_assets, num_portfolios))
 
-    def portfolio_performance(weights):
-        returns = np.sum(weights * mean_returns) * 252
-        risk = np.sqrt(np.dot(weights.T, np.dot(cov_matrix * 252, weights)))
-        sharpe_ratio = (returns - risk_free_rate) / risk
-        return -sharpe_ratio  # Negativo para maximizar Sharpe
+    for i in range(num_portfolios):
+        weights = np.random.random(num_assets)
+        weights /= np.sum(weights)
+        portfolio_return = np.dot(weights, mean_returns)
+        portfolio_std = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
+        sharpe_ratio = (portfolio_return - risk_free_rate) / portfolio_std
+        results[0, i] = portfolio_return
+        results[1, i] = portfolio_std
+        results[2, i] = sharpe_ratio
+        results[3:, i] = weights
 
-    # Restricciones
-    constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
-    bounds = tuple((0, 1) for _ in range(num_assets))
-    initial_weights = num_assets * [1. / num_assets]
+    results_df = pd.DataFrame(
+        results.T, columns=["Return", "Risk", "Sharpe"] + [f"Asset_{i}" for i in range(num_assets)]
+    )
+    max_sharpe_idx = results_df["Sharpe"].idxmax()
+    min_risk_idx = results_df["Risk"].idxmin()
+    max_sharpe_portfolio = results_df.iloc[max_sharpe_idx]
+    min_risk_portfolio = results_df.iloc[min_risk_idx]
 
-    result = minimize(portfolio_performance, initial_weights, method='SLSQP', bounds=bounds, constraints=constraints)
-    return result.x
+    return results_df, max_sharpe_portfolio, min_risk_portfolio
 
-# Integrar análisis completo
-def analyze_portfolio(tickers, years=5, simulations=1000):
-    all_returns = []
-    for ticker in tickers:
-        returns, _ = analyze_with_monte_carlo(ticker, years, simulations)
-        if returns is not None:
-            all_returns.append(returns)
 
-    # Combinar los retornos de todos los activos
-    combined_returns = pd.concat(all_returns, axis=1).dropna()
-    combined_returns.columns = tickers
+# 3. Función para visualizar la frontera eficiente
+def plot_efficient_frontier_with_cml(results_df, max_sharpe_portfolio, min_risk_portfolio, tickers, risk_free_rate=0.02):
+    """Muestra la frontera eficiente y la línea de mercado de capitales (CML)."""
+    # Cálculo de la pendiente de la CML
+    max_sharpe_return = max_sharpe_portfolio["Return"]
+    max_sharpe_risk = max_sharpe_portfolio["Risk"]
+    cml_x = np.linspace(0, max_sharpe_risk, 100)  # Valores de riesgo (eje X)
+    cml_y = risk_free_rate + (max_sharpe_return - risk_free_rate) * (cml_x / max_sharpe_risk)  # Fórmula de la CML
 
-    # Optimización de portafolio
-    optimal_weights = optimize_portfolio(combined_returns)
-    st.write("Pesos del portafolio óptimo:")
-    for ticker, weight in zip(tickers, optimal_weights):
-        st.write(f"{ticker}: {weight:.2%}")
+    fig = go.Figure()
 
     # Frontera eficiente
-    risks, returns, weights_list = efficient_frontier(combined_returns)
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=risks, y=returns, mode='lines', name='Frontera Eficiente'))
+    fig.add_trace(
+        go.Scatter(
+            x=results_df["Risk"],
+            y=results_df["Return"],
+            mode="markers",
+            marker=dict(color=results_df["Sharpe"], colorscale="Viridis", size=5),
+            name="Portafolios",
+        )
+    )
+
+    # Punto de Máximo Sharpe
+    fig.add_trace(
+        go.Scatter(
+            x=[max_sharpe_portfolio["Risk"]],
+            y=[max_sharpe_portfolio["Return"]],
+            mode="markers",
+            marker=dict(color="red", size=10),
+            name="Máximo Sharpe",
+        )
+    )
+
+    # Punto de Mínimo Riesgo
+    fig.add_trace(
+        go.Scatter(
+            x=[min_risk_portfolio["Risk"]],
+            y=[min_risk_portfolio["Return"]],
+            mode="markers",
+            marker=dict(color="blue", size=10),
+            name="Mínimo Riesgo",
+        )
+    )
+
+    # Línea de Mercado de Capitales (CML)
+    fig.add_trace(
+        go.Scatter(
+            x=cml_x,
+            y=cml_y,
+            mode="lines",
+            line=dict(color="orange", dash="dash"),
+            name="Línea de Mercado de Capitales (CML)",
+        )
+    )
+
+    # Configuración del gráfico
+    fig.update_layout(
+        title="Frontera Eficiente y Línea de Mercado de Capitales (CML)",
+        xaxis_title="Riesgo (Volatilidad)",
+        yaxis_title="Retorno Esperado",
+        template="plotly_white",
+    )
     st.plotly_chart(fig)
 
-# Función para calcular la frontera eficiente
-def efficient_frontier(returns, num_points=100):
-    results = []
-    num_assets = len(returns.columns)
-    weights_list = []
-    target_returns = np.linspace(returns.mean().min() * 252, returns.mean().max() * 252, num_points)
-
-    for target in target_returns:
-        constraints = ({'type': 'eq', 'fun': lambda w: np.sum(w) - 1},
-                       {'type': 'eq', 'fun': lambda w: np.sum(w * returns.mean() * 252) - target})
-        bounds = tuple((0, 1) for _ in range(num_assets))
-        result = minimize(lambda w: np.sqrt(np.dot(w.T, np.dot(returns.cov() * 252, w))),
-                          num_assets * [1. / num_assets],
-                          bounds=bounds, constraints=constraints)
-        if result.success:
-            results.append((result.fun, target))
-            weights_list.append(result.x)
-    
-    risks, returns = zip(*results)
-    return risks, returns, weights_list
-
-# Streamlit Interface
-st.sidebar.header("Optimización de Portafolio")
-
-tickers = st.sidebar.text_input("Ingrese Tickers (separados por comas):", value="AAPL,MSFT,GOOGL")
-tickers_list = [ticker.strip() for ticker in tickers.split(",")]
 
 
+# 4. Interfaz de usuario con Streamlit
+st.title("Optimizador de Carteras")
 
+# Ingreso de tickers
+tickers = st.sidebar.text_area("Ingrese los tickers separados por comas:", value="ORCL,NU,NEM").split(",")
+start_date = st.sidebar.date_input("Fecha de inicio", value=pd.to_datetime("2020-01-01"))
+end_date = st.sidebar.date_input("Fecha de fin", value=pd.to_datetime("2023-01-01"))
 
-if st.sidebar.button("Ejecutar Análisis de Portafolio"):
-    analyze_portfolio(tickers_list, monte_carlo_years, monte_carlo_simulation)
+# Botón para ejecutar la optimización
+# Entrada para la tasa libre de riesgo
+risk_free_rate = st.sidebar.number_input("Tasa libre de riesgo (%)", value=2.0) / 100
 
+# Optimización y visualización
+if st.sidebar.button("Optimizar Cartera"):
+    with st.spinner("Descargando datos y optimizando la cartera..."):
+        # Descargar datos
+        returns = get_stock_data(tickers, start_date, end_date)
+
+        if returns is not None:
+            # Optimizar cartera
+            results_df, max_sharpe, min_risk = optimize_portfolio(returns, risk_free_rate=risk_free_rate)
+
+            # Mostrar resultados
+            st.subheader("Resultados de la Optimización")
+
+            # Portafolio de Máximo Sharpe
+            st.write("Portafolio de Máximo Sharpe:")
+            st.table(
+                pd.DataFrame({
+                    "Ticker": tickers,
+                    "Peso Óptimo (%)": (max_sharpe[3:] * 100).values
+                }).set_index("Ticker")
+            )
+
+            # Resumen de Retorno y Riesgo
+            st.write("Resumen del Punto Eficiente:")
+            resumen_punto_eficiente = pd.DataFrame({
+                "Métrica": ["Retorno", "Riesgo (Volatilidad)", "Sharpe Ratio"],
+                "Valor": [
+                    round(max_sharpe["Return"], 4),
+                    round(max_sharpe["Risk"], 4),
+                    round(max_sharpe["Sharpe"], 4)
+                ]
+            })
+            st.table(resumen_punto_eficiente)
+
+            # Graficar Frontera Eficiente con CML
+            plot_efficient_frontier_with_cml(results_df, max_sharpe, min_risk, tickers, risk_free_rate)
 
 
