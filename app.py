@@ -339,7 +339,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
-
+import os
 # Función para realizar la simulación Monte Carlo
 def monte_carlo_simulation(initial_price, mu, sigma, days, simulations):
     dt = 1
@@ -385,8 +385,9 @@ def analyze_with_monte_carlo(ticker, years=5, simulations=1000):
     
     best_simulation.to_csv(f"{ticker}_montecarlo_simulations.csv")
     # Guardar los resultados si se desea
-    
-    
+    output_folder = "data"
+    output_file = f"{ticker}_montecarlo_simulations.csv"
+    output_path = os.path.join(output_folder, output_file)
     # Visualizar simulaciones con Plotly
     fig = go.Figure()
     for i in range(10):  # Mostrar 10 simulaciones
@@ -552,7 +553,7 @@ def plot_efficient_frontier_with_cml(results_df, max_sharpe_portfolio, min_risk_
 
 # 4. Interfaz de usuario con Streamlit
 st.title("Optimizador de Carteras")
-
+st.sidebar.header("Cartera Eficiente")
 # Ingreso de tickers
 tickers = st.sidebar.text_area("Ingrese los tickers separados por comas:", value="ORCL,NU,NEM").split(",")
 start_date = st.sidebar.date_input("Fecha de inicio", value=pd.to_datetime("2020-01-01"))
