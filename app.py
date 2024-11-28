@@ -68,9 +68,9 @@ def analyze_stock(ticker, start_date, end_date):
     
 
 assets = ["NU", "ORCL", "NEM",'AAPL']
-
+ticker = st.sidebar.text_input("Ingrese Ticker:", value="MSFT")
 # Crear lista desplegable en la barra lateral
-ticker = st.sidebar.selectbox("Selecciona un activo:", assets)
+
 start_date = st.sidebar.date_input("Start Date:", value=datetime.date(2020, 1, 1))
 end_date = st.sidebar.date_input("End Date:", value=datetime.date(2024, 1, 1))
 
@@ -389,6 +389,7 @@ def analyze_with_monte_carlo(ticker, years=5, simulations=1000):
     output_path = os.path.join(output_folder, output_file)
     best_simulation.to_csv(output_path,index=True)
    
+
     # Visualizar simulaciones con Plotly
     fig = go.Figure()
     for i in range(10):  # Mostrar 10 simulaciones
@@ -553,7 +554,7 @@ def plot_efficient_frontier_with_cml(results_df, max_sharpe_portfolio, min_risk_
 
 
 # 4. Interfaz de usuario con Streamlit
-st.title("Optimizador de Carteras")
+
 st.sidebar.header("Cartera Eficiente")
 # Ingreso de tickers
 tickers = st.sidebar.text_area("Ingrese los tickers separados por comas:", value="ORCL,NU,NEM").split(",")
