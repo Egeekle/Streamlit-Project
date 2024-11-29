@@ -3,7 +3,7 @@ import streamlit as st
 
 st.title("Analisis Tecnico de Acciones")
 st.write("Este es un ejemplo de una aplicación web para análisis técnico de acciones.")
-
+st.sidebar.header("Analisis Tecnico de Acciones")
 from scipy.optimize import minimize
 import yfinance as yf
 import pandas as pd
