@@ -13,9 +13,9 @@ import streamlit as st
 import plotly.express as px
 
 def analyze_stock(ticker, start_date, end_date):
-    # 1. Fetch Data
+    
     try:
-        # Descargar solo los precios de cierre
+        
         data = yf.download(ticker, start=start_date, end=end_date)[['Close']]
         if data.empty:
             st.error(f"No data found for {ticker} between {start_date} and {end_date}")
@@ -24,15 +24,15 @@ def analyze_stock(ticker, start_date, end_date):
         st.error(f"Error fetching data: {e}")
         return data.dropna()
 
-    # Asegúrate de que la columna 'Close' sea unidimensional
+    
     data['Close'] = data['Close'].squeeze()
 
-    # Verifica que haya suficientes datos
+    
     if len(data) < 200:
         st.error(f"Not enough data to calculate all indicators for {ticker}.")
         return
 
-    # 2. Calculate Indicators
+    
     data['SMA_50'] = data['Close'].rolling(window=50).mean()
     data['SMA_200'] = data['Close'].rolling(window=200).mean()
     data['EMA_50'] = data['Close'].ewm(span=50, adjust=False).mean()
@@ -44,7 +44,7 @@ def analyze_stock(ticker, start_date, end_date):
     data['Buy_Signal'] = np.where(data['SMA_50'] > data['SMA_200'], 1, 0)
     data['Sell_Signal'] = np.where(data['SMA_50'] < data['SMA_200'], 1, 0)
     
-    # 3. Plotting with Plotly Express
+    
     fig = px.line(data.reset_index(), x='Date', y=data['Close'].squeeze(), title=f"{ticker} Close Price")
     fig.add_scatter(x=data.index, y=data['SMA_50'], mode='lines', name='SMA 50')
     fig.add_scatter(x=data.index, y=data['SMA_200'], mode='lines', name='SMA 200')
@@ -53,23 +53,23 @@ def analyze_stock(ticker, start_date, end_date):
     fig.add_scatter(x=data.index, y=data['Upper'], mode='lines', name='Upper BB')
     fig.add_scatter(x=data.index, y=data['Lower'], mode='lines', name='Lower BB')
 
-    # Add Buy/Sell signals
+    
     fig.add_scatter(x=data.index[data['Buy_Signal'] == 1], y=data
                     ['Close'].squeeze()[data['Buy_Signal'] == 1], mode='markers', name='Buy Signal', marker=dict(color='green', size=10))
     fig.add_scatter(x=data.index[data['Sell_Signal'] == 1], y=data['Close'].squeeze()[data['Sell_Signal'] == 1],
                     mode='markers', name='Sell Signal', marker=dict(color='red', size=10))
     fig.update_layout(xaxis_title="Date", yaxis_title="Price")
     fig.update_layout(legend_title="Precio de Cierre",
-    width=2000,  # Ancho del gráfico
-    height=600)  # Alto del gráfico)
-    st.plotly_chart(fig)  # Display the Plotly chart
+    width=2000,  
+    height=600)  
+    st.plotly_chart(fig)  
 
-    # 4. Risk/Return analysis (placeholder)
+    
     
 
 assets = ["NU", "ORCL", "NEM",'AAPL']
 ticker = st.sidebar.text_input("Ingrese Ticker:", value="MSFT")
-# Crear lista desplegable en la barra lateral
+
 
 start_date = st.sidebar.date_input("Start Date:", value=datetime.date(2020, 1, 1))
 end_date = st.sidebar.date_input("End Date:", value=datetime.date(2024, 1, 1))
@@ -88,7 +88,7 @@ import numpy as np
 import datetime
 import plotly.graph_objects as go
 def analyze_stock(ticker, start_date, end_date):
-    # 1. Fetch Data
+    
     try:
         data = yf.download(ticker, start=start_date, end=end_date)
         if data.empty:
@@ -101,15 +101,15 @@ def analyze_stock(ticker, start_date, end_date):
         st.error(f"Error fetching data: {e}")
         return
 
-    # Asegúrate de que la columna 'Close' sea unidimensional
+    
     data['Close'] = data['Close'].squeeze()
 
-    # Verifica que haya suficientes datos
+    
     if len(data) < 200:
         st.error(f"Not enough data to calculate all indicators for {ticker}.")
         return
 
-    # 2. Calculate Indicators
+    
     data['SMA_50'] = data['Close'].rolling(window=50).mean()
     data['SMA_200'] = data['Close'].rolling(window=200).mean()
     data['EMA_50'] = data['Close'].ewm(span=50, adjust=False).mean()
@@ -127,7 +127,7 @@ def analyze_stock(ticker, start_date, end_date):
     data['EMA_26'] = data['Close'].ewm(span=26, adjust=False).mean()
     data['MACD'] = data['EMA_12'] - data['EMA_26']
     data['MACD_Signal'] = data['MACD'].ewm(span=9, adjust=False).mean()
-    # 3. Add checkboxes for visibility of lines
+    
     show_sma_50 = st.sidebar.checkbox("Show SMA 50", value=True)
     show_sma_200 = st.sidebar.checkbox("Show SMA 200", value=True)
     show_ema_50 = st.sidebar.checkbox("Show EMA 50", value=True)
@@ -136,10 +136,10 @@ def analyze_stock(ticker, start_date, end_date):
     show_lower_bb = st.sidebar.checkbox("Show Lower Bollinger Band", value=True)
     show_rsi = st.sidebar.checkbox("Show RSI", value=True)
     show_macd = st.sidebar.checkbox("Show MACD", value=True)
-    # 4. Plotting with Plotly Express
+    
     fig = px.line(data.reset_index(), x='Date', y=data['Close'].squeeze(), title=f"{ticker} Close Price")
 
-    # Add lines based on checkbox selection
+    
     if show_sma_50:
         fig.add_scatter(x=data.index, y=data['SMA_50'], mode='lines', name='SMA 50')
     if show_sma_200:
@@ -165,38 +165,38 @@ def analyze_stock(ticker, start_date, end_date):
         height=600
     )
     
-    st.plotly_chart(fig)  # Display the Plotly chart
+    st.plotly_chart(fig)  
 
-    # 5. Risk/Return analysis (placeholder)
+    
     st.write("Risk/Return analysis is under construction.")
 
 
-# Inputs
+
 def analyze_returns(data, ticker):
-    # Calculate Returns
-    data['Arithmetic Return'] = data['Close'].pct_change()  # Rendimiento aritmético
-    data['Logarithmic Return'] = np.log(data['Close'] / data['Close'].shift(1))  # Rendimiento logarítmico
     
-    # Drop NaN values
+    data['Arithmetic Return'] = data['Close'].pct_change()  
+    data['Logarithmic Return'] = np.log(data['Close'] / data['Close'].shift(1))  
+    
+    
     data = data.dropna()
 
-    # Calculate Risk
+    
     arithmetic_risk = data['Arithmetic Return'].std()
     logarithmic_risk = data['Logarithmic Return'].std()
 
-    # Display risk
+    
     st.write(f"**Risk Analysis for {ticker}**")
     st.write(f"- Arithmetic Return Risk: {arithmetic_risk:.4f}")
     st.write(f"- Logarithmic Return Risk: {logarithmic_risk:.4f}")
 
-    # Plot Returns
+    
     fig = go.Figure()
 
-    # Add Arithmetic and Logarithmic Returns
+    
     fig.add_trace(go.Scatter(x=data.index, y=data['Arithmetic Return'], mode='lines', name='Arithmetic Return', line=dict(color='green')))
     fig.add_trace(go.Scatter(x=data.index, y=data['Logarithmic Return'], mode='lines', name='Logarithmic Return', line=dict(color='orange')))
 
-    # Layout
+    
     fig.update_layout(
         title=f"{ticker} Returns and Risk",
         xaxis_title="Date",
@@ -209,7 +209,7 @@ def analyze_returns(data, ticker):
 
     st.plotly_chart(fig)
 
-# Inputs
+
 
 
 
@@ -222,7 +222,7 @@ import numpy as np
 import datetime
 
 def analyze_stock(ticker, start_date, end_date):
-    # 1. Fetch Data
+    
     try:
         data = yf.download(ticker, start=start_date, end=end_date)
         if data.empty:
@@ -235,15 +235,15 @@ def analyze_stock(ticker, start_date, end_date):
         st.error(f"Error fetching data: {e}")
         return
 
-    # Asegúrate de que la columna 'Close' sea unidimensional
+    
     data['Close'] = data['Close'].squeeze()
 
-    # Verifica que haya suficientes datos
+    
     if len(data) < 200:
         st.error(f"Not enough data to calculate all indicators for {ticker}.")
         return
 
-    # 2. Calculate Indicators
+    
     data['SMA_50'] = data['Close'].rolling(window=50).mean()
     data['SMA_200'] = data['Close'].rolling(window=200).mean()
     data['EMA_50'] = data['Close'].ewm(span=50, adjust=False).mean()
@@ -255,7 +255,7 @@ def analyze_stock(ticker, start_date, end_date):
     data['Buy_Signal'] = np.where(data['SMA_50'] > data['SMA_200'], 1, 0)
     data['Sell_Signal'] = np.where(data['SMA_50'] < data['SMA_200'], 1, 0)
 
-    # 3. Plotting with Indicators
+    
     fig = px.line(data.reset_index(), x='Date', y=data['Close'].squeeze(), title=f"{ticker} Close Price")
     fig.add_scatter(x=data.index, y=data['SMA_50'], mode='lines', name='SMA 50')
     fig.add_scatter(x=data.index, y=data['SMA_200'], mode='lines', name='SMA 200')
@@ -274,37 +274,37 @@ def analyze_stock(ticker, start_date, end_date):
 
     st.plotly_chart(fig)
 
-    # 4. Add Returns and Risk Analysis
+    
     analyze_returns(data, ticker)
 
 def analyze_returns(data, ticker):
-    # Calculate Returns
-    data['Arithmetic Return'] = data['Close'].pct_change()  # Rendimiento aritmético
-    data['Logarithmic Return'] = np.log(data['Close'] / data['Close'].shift(1))  # Rendimiento logarítmico
     
-    # Drop NaN values
+    data['Arithmetic Return'] = data['Close'].pct_change()  
+    data['Logarithmic Return'] = np.log(data['Close'] / data['Close'].shift(1))  
+    
+    
     data = data.dropna()
 
-    # Calculate Risk
+    
     arithmetic_r = data['Arithmetic Return'].mean()
     logarithmic_r = data['Logarithmic Return'].mean()
     arithmetic_risk = data['Arithmetic Return'].std()
     logarithmic_risk = data['Logarithmic Return'].std()
-    # Display risk
+    
     st.write(f"**Risk Analysis for {ticker}**")
     st.write(f"- Arithmetic Return : {arithmetic_r:.4f}")
     st.write(f"- Logarithmic Return : {logarithmic_r:.4f}")
     st.write(f"- Arithmetic Risk: {arithmetic_risk:.4f}")
     st.write(f"- Logarithmic Risk : {logarithmic_risk:.4f}")
 
-    # Plot Returns
+    
     fig = go.Figure()
 
-    # Add Arithmetic and Logarithmic Returns
+    
     fig.add_trace(go.Scatter(x=data.index, y=data['Arithmetic Return'], mode='lines', name='Arithmetic Return', line=dict(color='green')))
     fig.add_trace(go.Scatter(x=data.index, y=data['Logarithmic Return'], mode='lines', name='Logarithmic Return', line=dict(color='orange')))
     fig.add_trace(go.Scatter(
-        x=[data.index.min(), data.index.max()],  # Línea horizontal desde inicio a fin
+        x=[data.index.min(), data.index.max()],  
         y=[arithmetic_risk, arithmetic_risk],
         mode='lines',
         name='Logarithmic Risk (+)',
@@ -317,7 +317,7 @@ def analyze_returns(data, ticker):
         name='Logarithmic Risk (-)',
         line=dict(color='blue', dash='dash')
     ))
-    # Layout
+    
     fig.update_layout(
         title=f"{ticker} Returns and Risk",
         xaxis_title="Date",
@@ -331,7 +331,7 @@ def analyze_returns(data, ticker):
     st.plotly_chart(fig)
 
 
-if st.sidebar.button("Analyze"):  # Button to trigger analysis
+if st.sidebar.button("Analyze"):  
     analyze_stock(ticker, start_date, end_date)
 
 import yfinance as yf
@@ -340,7 +340,7 @@ import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 import os
-# Función para realizar la simulación Monte Carlo
+
 def monte_carlo_simulation(initial_price, mu, sigma, days, simulations):
     dt = 1
     price_matrix = np.zeros((days, simulations))
@@ -350,49 +350,49 @@ def monte_carlo_simulation(initial_price, mu, sigma, days, simulations):
         price_matrix[t] = price_matrix[t - 1] * np.exp(random_shocks)
     return price_matrix
 
-# Función para analizar con Monte Carlo
+
 def analyze_with_monte_carlo(ticker, years=5, simulations=1000):
-    # Descargar datos históricos del activo
+    
     data = yf.download(ticker, start=start_date, end=end_date)['Close']
     
     if data.empty:
         st.error(f"No se encontraron datos para {ticker}.")
         return
     
-    # Calcular rendimientos diarios
+    
     returns = data.pct_change().dropna()
     
-    # Parámetros estadísticos
-    last_price = float(data.iloc[-1])  # Convertir a escalar
+    
+    last_price = float(data.iloc[-1])  
     mu = returns.mean()
     sigma = returns.std()
-    days = years * 252  # Aproximación a días hábiles
+    days = years * 252  
 
-    # Simulación Monte Carlo
+    
     simulated_prices = monte_carlo_simulation(last_price, mu, sigma, days, simulations)
     
-    # Generar fechas de simulación
+    
     simulation_dates = pd.date_range(data.index[-1] + pd.Timedelta(days=1), periods=days, freq='B')
     
-    # Convertir simulaciones a DataFrame
+    
     simulation_df = pd.DataFrame(simulated_prices, index=simulation_dates)
     simulation_df.columns = [f"Simulacion{i + 1}" for i in range(simulations)]
     
-    # Identificar la mejor simulación
-    final_prices = simulation_df.iloc[-1]
-    best_simulation_idx = final_prices.idxmax()  # Índice de la mejor simulación
     
-    best_simulation = simulation_df[best_simulation_idx]  # Datos de la mejor simulación
-    # Guardar los resultados si se desea
+    final_prices = simulation_df.iloc[-1]
+    best_simulation_idx = final_prices.idxmax()  
+    
+    best_simulation = simulation_df[best_simulation_idx]  
+    
     output_folder = "data"
     output_file = f"{ticker}_montecarlo_simulations.csv"
     output_path = os.path.join(output_folder, output_file)
     best_simulation.to_csv(output_path,index=True)
    
 
-    # Visualizar simulaciones con Plotly
+    
     fig = go.Figure()
-    for i in range(10):  # Mostrar 10 simulaciones
+    for i in range(10):  
         fig.add_trace(go.Scatter(
             x=simulation_dates,
             y=simulation_df.iloc[:, i],
@@ -401,7 +401,7 @@ def analyze_with_monte_carlo(ticker, years=5, simulations=1000):
             line=dict(width=1, dash='dash')
         ))
 
-    # Agregar el precio actual al gráfico
+    
     fig.add_trace(go.Scatter(
         x=[data.index[-1]],
         y=[last_price],
@@ -412,7 +412,7 @@ def analyze_with_monte_carlo(ticker, years=5, simulations=1000):
         textposition='top center'
     ))
 
-    # Layout del gráfico
+    
     fig.update_layout(
         title=f"Simulaciones de Monte Carlo: {ticker}",
         xaxis_title="Fecha",
@@ -426,7 +426,7 @@ def analyze_with_monte_carlo(ticker, years=5, simulations=1000):
     st.plotly_chart(fig)
 
 
-# Integrar al proyecto Streamlit
+
 st.sidebar.header("Simulación Monte Carlo")
 
 monte_carlo_ticker = st.sidebar.text_input("Ingrese Ticker:", value="AAPL")
@@ -445,21 +445,21 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 
 
-# 1. Función para cargar datos desde Yahoo Finance
+
 def get_stock_data(tickers, start_date, end_date):
-    """Descarga datos de precios ajustados y calcula rendimientos diarios."""
+    
     try:
         data = yf.download(tickers, start=start_date, end=end_date)['Close']
-        returns = data.pct_change().dropna()  # Calcular rendimientos diarios
+        returns = data.pct_change().dropna()  
         return returns
     except Exception as e:
         st.error(f"Error al descargar datos de Yahoo Finance: {e}")
         return None
 
 
-# 2. Función para optimizar la cartera
+
 def optimize_portfolio(returns, risk_free_rate=0.02, num_portfolios=10000):
-    """Genera múltiples carteras y encuentra la frontera eficiente."""
+    
     mean_returns = returns.mean()
     cov_matrix = returns.cov()
     num_assets = len(mean_returns)
@@ -487,18 +487,17 @@ def optimize_portfolio(returns, risk_free_rate=0.02, num_portfolios=10000):
     return results_df, max_sharpe_portfolio, min_risk_portfolio
 
 
-# 3. Función para visualizar la frontera eficiente
+
 def plot_efficient_frontier_with_cml(results_df, max_sharpe_portfolio, min_risk_portfolio, tickers, risk_free_rate=0.02):
-    """Muestra la frontera eficiente y la línea de mercado de capitales (CML)."""
-    # Cálculo de la pendiente de la CML
+   
     max_sharpe_return = max_sharpe_portfolio["Return"]
     max_sharpe_risk = max_sharpe_portfolio["Risk"]
-    cml_x = np.linspace(0, max_sharpe_risk, 100)  # Valores de riesgo (eje X)
-    cml_y = risk_free_rate + (max_sharpe_return - risk_free_rate) * (cml_x / max_sharpe_risk)  # Fórmula de la CML
+    cml_x = np.linspace(0, max_sharpe_risk, 100)  
+    cml_y = risk_free_rate + (max_sharpe_return - risk_free_rate) * (cml_x / max_sharpe_risk)  
 
     fig = go.Figure()
 
-    # Frontera eficiente
+    
     fig.add_trace(
         go.Scatter(
             x=results_df["Risk"],
@@ -509,7 +508,7 @@ def plot_efficient_frontier_with_cml(results_df, max_sharpe_portfolio, min_risk_
         )
     )
 
-    # Punto de Máximo Sharpe
+    
     fig.add_trace(
         go.Scatter(
             x=[max_sharpe_portfolio["Risk"]],
@@ -520,7 +519,7 @@ def plot_efficient_frontier_with_cml(results_df, max_sharpe_portfolio, min_risk_
         )
     )
 
-    # Punto de Mínimo Riesgo
+    
     fig.add_trace(
         go.Scatter(
             x=[min_risk_portfolio["Risk"]],
@@ -531,7 +530,7 @@ def plot_efficient_frontier_with_cml(results_df, max_sharpe_portfolio, min_risk_
         )
     )
 
-    # Línea de Mercado de Capitales (CML)
+    
     fig.add_trace(
         go.Scatter(
             x=cml_x,
@@ -542,7 +541,7 @@ def plot_efficient_frontier_with_cml(results_df, max_sharpe_portfolio, min_risk_
         )
     )
 
-    # Configuración del gráfico
+   
     fig.update_layout(
         title="Frontera Eficiente y Línea de Mercado de Capitales (CML)",
         xaxis_title="Riesgo (Volatilidad)",
@@ -553,32 +552,31 @@ def plot_efficient_frontier_with_cml(results_df, max_sharpe_portfolio, min_risk_
 
 
 
-# 4. Interfaz de usuario con Streamlit
+
 
 st.sidebar.header("Cartera Eficiente")
-# Ingreso de tickers
+
 tickers = st.sidebar.text_area("Ingrese los tickers separados por comas:", value="ORCL,NU,NEM").split(",")
 start_date = st.sidebar.date_input("Fecha de inicio", value=pd.to_datetime("2020-01-01"))
 end_date = st.sidebar.date_input("Fecha de fin", value=pd.to_datetime("2023-01-01"))
 
-# Botón para ejecutar la optimización
-# Entrada para la tasa libre de riesgo
+
 risk_free_rate = st.sidebar.number_input("Tasa libre de riesgo (%)", value=2.0) / 100
 
-# Optimización y visualización
+
 if st.sidebar.button("Optimizar Cartera"):
     with st.spinner("Descargando datos y optimizando la cartera..."):
-        # Descargar datos
+        
         returns = get_stock_data(tickers, start_date, end_date)
 
         if returns is not None:
-            # Optimizar cartera
+            
             results_df, max_sharpe, min_risk = optimize_portfolio(returns, risk_free_rate=risk_free_rate)
 
-            # Mostrar resultados
+            
             st.subheader("Resultados de la Optimización")
 
-            # Portafolio de Máximo Sharpe
+            
             st.write("Portafolio de Máximo Sharpe:")
             st.table(
                 pd.DataFrame({
@@ -587,7 +585,7 @@ if st.sidebar.button("Optimizar Cartera"):
                 }).set_index("Ticker")
             )
 
-            # Resumen de Retorno y Riesgo
+            
             st.write("Resumen del Punto Eficiente:")
             resumen_punto_eficiente = pd.DataFrame({
                 "Métrica": ["Retorno", "Riesgo (Volatilidad)", "Sharpe Ratio"],
@@ -599,7 +597,7 @@ if st.sidebar.button("Optimizar Cartera"):
             })
             st.table(resumen_punto_eficiente)
 
-            # Graficar Frontera Eficiente con CML
+            
             plot_efficient_frontier_with_cml(results_df, max_sharpe, min_risk, tickers, risk_free_rate)
 
 
