@@ -45,7 +45,7 @@ def analyze_stock(ticker, start_date, end_date):
     data['Sell_Signal'] = np.where(data['SMA_50'] < data['SMA_200'], 1, 0)
     
     
-    fig = px.line(data.reset_index(), x='Date', y=data['Close'].squeeze(), title=f"{ticker} Close Price")
+    fig = px.line(data.reset_index(), x='Date', y=data['Close'], title=f"{ticker} Close Price")
     fig.add_scatter(x=data.index, y=data['SMA_50'], mode='lines', name='SMA 50')
     fig.add_scatter(x=data.index, y=data['SMA_200'], mode='lines', name='SMA 200')
     fig.add_scatter(x=data.index, y=data['EMA_50'], mode='lines', name='EMA 50')
